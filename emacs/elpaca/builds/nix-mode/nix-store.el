@@ -1,0 +1,1 @@
+/home/inari/.config/emacs/elpaca/repos/nix-mode/nix-store.el

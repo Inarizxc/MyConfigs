@@ -1,0 +1,1 @@
+("~/.config/" "~/Documents/Dev/zig/vaxis/")
