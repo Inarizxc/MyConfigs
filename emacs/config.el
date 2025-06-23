@@ -1,3 +1,6 @@
+;; Добавлена проверка TLS
+(setq gnutls-algorithm-priority "NORMAL:-VERS-TLS1.3")
+
 (defvar elpaca-installer-version 0.11)
 (defvar elpaca-directory (expand-file-name "elpaca/" user-emacs-directory))
 (defvar elpaca-builds-directory (expand-file-name "builds/" elpaca-directory))
@@ -65,19 +68,18 @@
   :config 
   (setq ring-bell-function #'ignore))
 
-;; Using RETURN to follow links in Org/Evil 
-;; Unmap keys in 'evil-maps if not done, (setq org-return-follows-link t) will not work
+;; Исправлена настройка RETURN для org-mode
 (with-eval-after-load 'evil-maps
-  (define-key evil-motion-state-map (kbd "SPC") nil)
   (define-key evil-motion-state-map (kbd "RET") nil)
   (define-key evil-motion-state-map (kbd "TAB") nil))
-;; Setting RETURN key in org-mode to follow links
-  (setq org-return-follows-link  t)
+
+(with-eval-after-load 'org
+  (setq org-return-follows-link t))
 
 (elpaca-wait)
 
 (use-package general
-  :ensure (:wait t)
+  :ensure
   :demand t
   :after evil
   :config
@@ -118,30 +120,32 @@
     "tl" '(display-line-numbers-mode :wk "Toggle line numbers")
     "tt" '(visual-line-mode :wk "Toggle truncated lines")))
 
-;; Проверка наличия шрифта
-(cond
- ((find-font (font-spec :name "JetBrainsMono Nerd Font"))
-  (set-face-attribute 'default nil
-   :font "JetBrainsMono Nerd Font"
-   :height 120
-   :weight 'medium)
-  (set-face-attribute 'variable-pitch nil
-   :font "JetBrainsMono Nerd Font"
-   :height 120
-   :weight 'medium)
-  (set-face-attribute 'fixed-pitch nil
-   :font "JetBrainsMono Nerd Font"
-   :height 120
-   :weight 'medium)
-  (add-to-list 'default-frame-alist '(font . "JetBrainsMono Nerd Font")))
- (t
-  (message "JetBrainsMono Nerd Font not found! Using fallback")
-  (set-face-attribute 'default nil :font "Monospace-11")
-  (set-face-attribute 'variable-pitch nil :font "Monospace-11")
-  (set-face-attribute 'fixed-pitch nil :font "Monospace-11")))
+;; Обернуто в проверку графического режима
+(when (display-graphic-p)
+  ;; Проверка наличия шрифта
+  (cond
+   ((find-font (font-spec :name "JetBrainsMono Nerd Font"))
+    (set-face-attribute 'default nil
+     :font "JetBrainsMono Nerd Font"
+     :height 120
+     :weight 'medium)
+    (set-face-attribute 'variable-pitch nil
+     :font "JetBrainsMono Nerd Font"
+     :height 120
+     :weight 'medium)
+    (set-face-attribute 'fixed-pitch nil
+     :font "JetBrainsMono Nerd Font"
+     :height 120
+     :weight 'medium)
+    (add-to-list 'default-frame-alist '(font . "JetBrainsMono Nerd Font")))
+   (t
+    (message "JetBrainsMono Nerd Font not found! Using fallback")
+    (set-face-attribute 'default nil :font "Monospace-11")
+    (set-face-attribute 'variable-pitch nil :font "Monospace-11")
+    (set-face-attribute 'fixed-pitch nil :font "Monospace-11")))
 
-(set-face-attribute 'font-lock-comment-face nil :slant 'italic)
-(set-face-attribute 'font-lock-keyword-face nil :slant 'italic)
+  (set-face-attribute 'font-lock-comment-face nil :slant 'italic)
+  (set-face-attribute 'font-lock-keyword-face nil :slant 'italic))
 
 (setq-default line-spacing 0.12)
 
@@ -150,12 +154,7 @@
 (global-set-key (kbd "<C-wheel-up>") 'text-scale-increase)
 (global-set-key (kbd "<C-wheel-down>") 'text-scale-decrease)
 
-(menu-bar-mode -1)
-(tool-bar-mode -1)
-(scroll-bar-mode -1)
-
-(global-display-line-numbers-mode 1)
-(global-visual-line-mode t)
+;; Удалены дублирующиеся настройки (перенесены в SANE DEFAULTS)
 
 (use-package toc-org
   :ensure
@@ -168,10 +167,30 @@
   :ensure
   :hook (org-mode . org-bullets-mode))
 
-(electric-indent-mode -1)
-(setq org-edit-src-content-indentation 0)
+;; Удален дублирующийся вызов electric-indent-mode
 
 (require 'org-tempo)
+
+(delete-selection-mode 1)    ;; You can select text and delete it by typing.
+(electric-indent-mode -1)    ;; Turn off the weird indenting that Emacs does by default.
+(electric-pair-mode 1)       ;; Turns on automatic parens pairing
+;; The following prevents <> from auto-pairing when electric-pair-mode is on.
+;; Otherwise, org-tempo is broken when you try to <s TAB...
+(add-hook 'org-mode-hook (lambda ()
+           (setq-local electric-pair-inhibit-predicate
+                   `(lambda (c)
+                  (if (char-equal c ?<) t (,electric-pair-inhibit-predicate c))))))
+(global-auto-revert-mode t)  ;; Automatically show changes if the file has changed
+(global-display-line-numbers-mode 1) ;; Display line numbers
+(global-visual-line-mode t)  ;; Enable truncated lines
+(menu-bar-mode -1)           ;; Disable the menu bar 
+(scroll-bar-mode -1)         ;; Disable the scroll bar
+(tool-bar-mode -1)           ;; Disable the tool bar
+(setq org-edit-src-content-indentation 0) ;; Set src block automatic indent to 0 instead of 2.
+
+;; Ускорение запуска
+(setq inhibit-startup-screen t)
+(setq initial-scratch-message nil)
 
 (use-package sudo-edit
   :ensure
@@ -239,8 +258,14 @@
 
 (global-set-key [escape] 'keyboard-escape-quit)
 
+(use-package rainbow-delimiters
+  :ensure
+  :hook ((emacs-lisp-mode . rainbow-delimiters-mode)
+         (clojure-mode . rainbow-delimiters-mode)))
+
 (use-package all-the-icons
-  :ensure t
+  :ensure
+  :defer t  ;; Отложенная загрузка
   :if (display-graphic-p))
 
 (use-package all-the-icons-dired
@@ -250,16 +275,23 @@
 (use-package catppuccin-theme
   :ensure
   :config
-  (load-theme 'catppuccin :no-confirm))
+  (load-theme 'catppuccin :no-confirm)
+  (setq catppuccin-flavor 'mocha)) ;; Выбор варианта темы
+
+;; Загрузка projectile перед dashboard
+(use-package projectile
+  :ensure
+  :diminish
+  :config (projectile-mode 1))
 
 (use-package dashboard
-  :ensure 
+  :ensure
   :init
   (setq initial-buffer-choice 'dashboard-open)
   (setq dashboard-set-heading-icons t)
   (setq dashboard-set-file-icons t)
   (setq dashboard-banner-logo-title "Emacs Is More Than A Text Editor!")
-  (setq dashboard-startup-banner 'logo) ;; use standard emacs logo as banner
+  (setq dashboard-startup-banner 'logo)
   (setq dashboard-center-content t)
   (setq dashboard-items '((recents . 5)
                           (agenda . 5 )
@@ -272,21 +304,16 @@
   :config
   (dashboard-setup-startup-hook))
 
-(use-package projectile
-  :ensure
-  :diminish
-  :config
-  (projectile-mode 1))
-
 (use-package flycheck
 :ensure
 :defer t
 :diminish
-:init (global-flycheck-mode))
+:init (add-hook 'after-init-hook #'global-flycheck-mode))
 
 (use-package diminish :ensure)
 
 (use-package company
+  :ensure
   :defer 2
   :diminish
   :custom
@@ -298,6 +325,7 @@
   (global-company-mode t))
 
 (use-package company-box
+  :ensure
   :after company
   :diminish
   :hook (company-mode . company-box-mode))
@@ -306,10 +334,10 @@
   :ensure t
   :init (doom-modeline-mode 1)
   :config
-  (setq doom-modeline-height 35      ;; sets modeline height
-        doom-modeline-bar-width 5    ;; sets right bar width
-        doom-modeline-persp-name t   ;; adds perspective name to modeline
-        doom-modeline-persp-icon t)) ;; adds folder icon next to persp name
+  (setq doom-modeline-height 35
+        doom-modeline-bar-width 5
+        doom-modeline-persp-name t
+        doom-modeline-persp-icon t))
 
-(use-package nix-mode :ensure)
-(use-package zig-mode :ensure)
+(use-package nix-mode :ensure t)
+(use-package zig-mode :ensure t)
