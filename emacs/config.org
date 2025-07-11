@@ -134,15 +134,6 @@
   (elpaca all-the-icons)
 #+end_src
 
-** SUDO EDIT
- #+begin_src emacs-lisp
-    (elpaca sudo-edit (use-package sudo-edit
-      :config
-        (dt/leader-keys
-          "fu" '(sudo-edit-find-file :wk "Sudo find file")
-          "fU" '(sudo-edit :wk "Sudo edit file"))))
- #+end_src
-
 * Settings
 
 ** Main Settings

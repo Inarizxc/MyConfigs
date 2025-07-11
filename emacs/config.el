@@ -91,12 +91,6 @@
 
 (elpaca all-the-icons)
 
-(elpaca sudo-edit
-  :config
-    (dt/leader-keys
-      "fu" '(sudo-edit-find-file :wk "Sudo find file")
-      "fU" '(sudo-edit :wk "Sudo edit file")))
-
 (setq inhibit-startup-message t)
 
 (delete-selection-mode 1)
