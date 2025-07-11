@@ -1,448 +1,276 @@
 #+TITLE: Emacs Config
 #+STARTUP: showeverything
 
-* TABLE OF CONTENTS :toc:
-- [[#important-pograms-to-load-first][IMPORTANT POGRAMS TO LOAD FIRST]]
-  - [[#elpaca-package-manager][Elpaca Package Manager]]
-  - [[#load-evil-mode][Load Evil Mode]]
-  - [[#general-keybindings][General Keybindings]]
-- [[#fonts][Fonts]]
-- [[#graphical-user-interface-tweaks][GRAPHICAL USER INTERFACE TWEAKS]]
-- [[#org-mode][ORG MODE]]
-- [[#sane-defaults][SANE DEFAULTS]]
-- [[#sudo-edit][SUDO EDIT]]
-- [[#backup][BACKUP]]
-- [[#which-key][WHICH-KEY]]
-- [[#ivy-counsel][IVY (COUNSEL)]]
-- [[#minibuffer-escape][MINIBUFFER ESCAPE]]
-- [[#rainbow-delimiters][RAINBOW DELIMITERS]]
-- [[#all-the-icons][ALL THE ICONS]]
-- [[#theme][THEME]]
-- [[#dashboard][DASHBOARD]]
-- [[#flycheck][FLYCHECK]]
-- [[#diminish][DIMINISH]]
-- [[#company][COMPANY]]
-- [[#modeline][MODELINE]]
-- [[#language-support][LANGUAGE SUPPORT]]
+* Packages
 
-* IMPORTANT POGRAMS TO LOAD FIRST
-
-** Elpaca Package Manager
-
+** Elpaca Install
 #+begin_src emacs-lisp
-;; Добавлена проверка TLS
-(setq gnutls-algorithm-priority "NORMAL:-VERS-TLS1.3")
+  (defvar elpaca-installer-version 0.11)
+  (defvar elpaca-directory (expand-file-name "elpaca/" user-emacs-directory))
+  (defvar elpaca-builds-directory (expand-file-name "builds/" elpaca-directory))
+  (defvar elpaca-repos-directory (expand-file-name "repos/" elpaca-directory))
+  (defvar elpaca-order '(elpaca :repo "https://github.com/progfolio/elpaca.git"
+                                :ref nil :depth 1 :inherit ignore
+                                :files (:defaults "elpaca-test.el" (:exclude "extensions"))
+                                :build (:not elpaca--activate-package)))
+  (let* ((repo  (expand-file-name "elpaca/" elpaca-repos-directory))
+         (build (expand-file-name "elpaca/" elpaca-builds-directory))
+         (order (cdr elpaca-order))
+         (default-directory repo))
+    (add-to-list 'load-path (if (file-exists-p build) build repo))
+    (unless (file-exists-p repo)
+      (make-directory repo t)
+      (when (<= emacs-major-version 28) (require 'subr-x))
+      (condition-case-unless-debug err
+          (if-let* ((buffer (pop-to-buffer-same-window "*elpaca-bootstrap*"))
+                    ((zerop (apply #'call-process `("git" nil ,buffer t "clone"
+                                                    ,@(when-let* ((depth (plist-get order :depth)))
+                                                        (list (format "--depth=%d" depth) "--no-single-branch"))
+                                                    ,(plist-get order :repo) ,repo))))
+                    ((zerop (call-process "git" nil buffer t "checkout"
+                                          (or (plist-get order :ref) "--"))))
+                    (emacs (concat invocation-directory invocation-name))
+                    ((zerop (call-process emacs nil buffer nil "-Q" "-L" "." "--batch"
+                                          "--eval" "(byte-recompile-directory \".\" 0 'force)")))
+                    ((require 'elpaca))
+                    ((elpaca-generate-autoloads "elpaca" repo)))
+              (progn (message "%s" (buffer-string)) (kill-buffer buffer))
+            (error "%s" (with-current-buffer buffer (buffer-string))))
+        ((error) (warn "%s" err) (delete-directory repo 'recursive))))
+    (unless (require 'elpaca-autoloads nil t)
+      (require 'elpaca)
+      (elpaca-generate-autoloads "elpaca" repo)
+      (let ((load-source-file-function nil)) (load "./elpaca-autoloads"))))
+  (add-hook 'after-init-hook #'elpaca-process-queues)
+  (elpaca `(,@elpaca-order))
 
-(defvar elpaca-installer-version 0.11)
-(defvar elpaca-directory (expand-file-name "elpaca/" user-emacs-directory))
-(defvar elpaca-builds-directory (expand-file-name "builds/" elpaca-directory))
-(defvar elpaca-repos-directory (expand-file-name "repos/" elpaca-directory))
-(defvar elpaca-order '(elpaca :repo "https://github.com/progfolio/elpaca.git"
-                              :ref nil :depth 1 :inherit ignore
-                              :files (:defaults "elpaca-test.el" (:exclude "extensions"))
-                              :build (:not elpaca--activate-package)))
-(let* ((repo  (expand-file-name "elpaca/" elpaca-repos-directory))
-       (build (expand-file-name "elpaca/" elpaca-builds-directory))
-       (order (cdr elpaca-order))
-       (default-directory repo))
-  (add-to-list 'load-path (if (file-exists-p build) build repo))
-  (unless (file-exists-p repo)
-    (make-directory repo t)
-    (when (<= emacs-major-version 28) (require 'subr-x))
-    (condition-case-unless-debug err
-        (if-let* ((buffer (pop-to-buffer-same-window "*elpaca-bootstrap*"))
-                  ((zerop (apply #'call-process `("git" nil ,buffer t "clone"
-                                                  ,@(when-let* ((depth (plist-get order :depth)))
-                                                      (list (format "--depth=%d" depth) "--no-single-branch"))
-                                                  ,(plist-get order :repo) ,repo))))
-                  ((zerop (call-process "git" nil buffer t "checkout"
-                                        (or (plist-get order :ref) "--"))))
-                  (emacs (concat invocation-directory invocation-name))
-                  ((zerop (call-process emacs nil buffer nil "-Q" "-L" "." "--batch"
-                                        "--eval" "(byte-recompile-directory \".\" 0 'force)")))
-                  ((require 'elpaca))
-                  ((elpaca-generate-autoloads "elpaca" repo)))
-            (progn (message "%s" (buffer-string)) (kill-buffer buffer))
-          (error "%s" (with-current-buffer buffer (buffer-string))))
-      ((error) (warn "%s" err) (delete-directory repo 'recursive))))
-  (unless (require 'elpaca-autoloads nil t)
-    (require 'elpaca)
-    (elpaca-generate-autoloads "elpaca" repo)
-    (let ((load-source-file-function nil)) (load "./elpaca-autoloads"))))
-(add-hook 'after-init-hook #'elpaca-process-queues)
-(elpaca `(,@elpaca-order))
+  (setq package-enable-at-startup nil)
 #+end_src
 
-** Load Evil Mode
-
+** Counsel
 #+begin_src emacs-lisp
-;; Install use-package support
-(elpaca elpaca-use-package
-  (elpaca-use-package-mode))
+  (elpaca counsel (use-package counsel
+    :bind (
+      ("M-x" . counsel-M-x)
+      ("C-x b" . counsel-ibuffer)
+      ("C-x C-f" . counsel-find-file)
+      :map minibuffer-local-map
+      ("C-r" . 'counsel-minibuffer-history))))
+#+end_src
 
-(use-package evil
-  :demand t
-  :ensure
+** Swiper
+#+begin_src emacs-lisp
+  (elpaca swiper)
+#+end_src
+
+** Ivy & Ivy Rich
+*** Ivy
+#+begin_src emacs-lisp
+  (elpaca ivy
+  (use-package ivy :bind (("C-s" . swiper)
+    :map ivy-minibuffer-map
+    ("TAB" . ivy-alt-done)))
+  :diminish
   :init
-  (setq evil-want-integration t)
-  (setq evil-want-keybinding nil)
-  (setq evil-vsplit-window-right t)
-  (setq evil-split-window-below t)
-  (evil-mode))
-
-(use-package evil-collection
-  :after evil
-  :ensure
-  :config
-  (setq evil-collection-list '(dashboard dired ibuffer))
-  (evil-collection-init))
-
-(use-package evil-tutor :ensure)
-
-(use-package emacs 
-  :ensure nil 
-  :config 
-  (setq ring-bell-function #'ignore))
-
-;; Исправлена настройка RETURN для org-mode
-(with-eval-after-load 'evil-maps
-  (define-key evil-motion-state-map (kbd "RET") nil)
-  (define-key evil-motion-state-map (kbd "TAB") nil))
-
-(with-eval-after-load 'org
-  (setq org-return-follows-link t))
+  (ivy-mode 1))
 #+end_src
 
-** General Keybindings
-
+*** Ivy Rich
 #+begin_src emacs-lisp
-   (elpaca-wait)
-
-   (use-package general
-     :ensure
-     :demand t
-     :after evil
-     :config
-     (general-evil-setup t)
-
-     (general-create-definer dt/leader-keys
-       :states '(normal insert visual emacs)
-       :keymaps 'override
-       :prefix "SPC"
-       :global-prefix "M-SPC")
-
-     (dt/leader-keys
-       "." '(find-file :wk "Find file")
-       "f c" '((lambda () (interactive) (find-file "~/.config/emacs/config.org")) :wk "Edit emacs config")
-       "f r" '(counsel-recentf :wk "Find recent files")
-       "TAB TAB" '(comment-line :wk "Comment lines")
-       
-       "b" '(:ignore t :wk "buffer")
-       "bb" '(switch-to-buffer :wk "Switch buffer")
-       "bi" '(ibuffer :wk "Ibuffer")
-       "bk" '(kill-this-buffer :wk "Kill this buffer")
-       "bn" '(next-buffer :wk "Next buffer")
-       "bp" '(previous-buffer :wk "Previous buffer")
-       "br" '(revert-buffer :wk "Reload buffer")
-       
-       "e" '(:ignore t :wk "Evaluate")    
-       "eb" '(eval-buffer :wk "Evaluate elisp in buffer")
-       "ed" '(eval-defun :wk "Evaluate defun containing or after point")
-       "ee" '(eval-expression :wk "Evaluate and elisp expression")
-       "el" '(eval-last-sexp :wk "Evaluate elisp expression before point")
-       "er" '(eval-region :wk "Evaluate elisp in region")
-       
-       "h" '(:ignore t :wk "Help")
-       "hf" '(describe-function :wk "Describe function")
-       "hv" '(describe-variable :wk "Describe variable")
-       
-       "t" '(:ignore t :wk "Toggle")
-       "tl" '(display-line-numbers-mode :wk "Toggle line numbers")
-       "tt" '(visual-line-mode :wk "Toggle truncated lines")))
+  (elpaca ivy-rich
+    :init (ivy-rich-mode 1))
 #+end_src
 
-* Fonts
-
+** Evil Mode & Evil Collection & Evil Nerd Commenter
+*** Evil Mode
 #+begin_src emacs-lisp
-  ;; Обернуто в проверку графического режима
-  (when (display-graphic-p)
-    ;; Проверка наличия шрифта
-    (cond
-     ((find-font (font-spec :name "JetBrainsMono Nerd Font"))
-      (set-face-attribute 'default nil
-       :font "JetBrainsMono Nerd Font"
-       :height 120
-       :weight 'medium)
-      (set-face-attribute 'variable-pitch nil
-       :font "JetBrainsMono Nerd Font"
-       :height 120
-       :weight 'medium)
-      (set-face-attribute 'fixed-pitch nil
-       :font "JetBrainsMono Nerd Font"
-       :height 120
-       :weight 'medium)
-      (add-to-list 'default-frame-alist '(font . "JetBrainsMono Nerd Font")))
-     (t
-      (message "JetBrainsMono Nerd Font not found! Using fallback")
-      (set-face-attribute 'default nil :font "Monospace-11")
-      (set-face-attribute 'variable-pitch nil :font "Monospace-11")
-      (set-face-attribute 'fixed-pitch nil :font "Monospace-11")))
-
-    (set-face-attribute 'font-lock-comment-face nil :slant 'italic)
-    (set-face-attribute 'font-lock-keyword-face nil :slant 'italic))
-
-  (setq-default line-spacing 0.12)
-
-  (global-set-key (kbd "C-=") 'text-scale-increase)
-  (global-set-key (kbd "C--") 'text-scale-decrease)
-  (global-set-key (kbd "<C-wheel-up>") 'text-scale-increase)
-  (global-set-key (kbd "<C-wheel-down>") 'text-scale-decrease)
+  (elpaca evil
+    :demand t
+    :init
+      (setq evil-want-integration t)
+      (setq evil-want-keybinding nil)
+      (setq evil-vsplit-window-right t)
+      (setq evil-split-window-below t)
+      (evil-mode))
 #+end_src
 
-* GRAPHICAL USER INTERFACE TWEAKS
+*** Evil Collection
 #+begin_src emacs-lisp
-;; Удалены дублирующиеся настройки (перенесены в SANE DEFAULTS)
-#+end_src
-
-* ORG MODE
-#+begin_src emacs-lisp
-(use-package toc-org
-  :ensure
-  :commands toc-org-enable
-  :init (add-hook 'org-mode-hook 'toc-org-enable))
-
-(add-hook 'org-mode-hook 'org-indent-mode)
-
-(use-package org-bullets 
-  :ensure
-  :hook (org-mode . org-bullets-mode))
-
-;; Удален дублирующийся вызов electric-indent-mode
-
-(require 'org-tempo)
-#+end_src
-
-* SANE DEFAULTS
-
-#+begin_src emacs-lisp
-(delete-selection-mode 1)    ;; You can select text and delete it by typing.
-(electric-indent-mode -1)    ;; Turn off the weird indenting that Emacs does by default.
-(electric-pair-mode 1)       ;; Turns on automatic parens pairing
-;; The following prevents <> from auto-pairing when electric-pair-mode is on.
-;; Otherwise, org-tempo is broken when you try to <s TAB...
-(add-hook 'org-mode-hook (lambda ()
-           (setq-local electric-pair-inhibit-predicate
-                   `(lambda (c)
-                  (if (char-equal c ?<) t (,electric-pair-inhibit-predicate c))))))
-(global-auto-revert-mode t)  ;; Automatically show changes if the file has changed
-(global-display-line-numbers-mode 1) ;; Display line numbers
-(global-visual-line-mode t)  ;; Enable truncated lines
-(menu-bar-mode -1)           ;; Disable the menu bar 
-(scroll-bar-mode -1)         ;; Disable the scroll bar
-(tool-bar-mode -1)           ;; Disable the tool bar
-(setq org-edit-src-content-indentation 0) ;; Set src block automatic indent to 0 instead of 2.
-
-;; Ускорение запуска
-(setq inhibit-startup-screen t)
-(setq initial-scratch-message nil)
-#+end_src
-
-* SUDO EDIT
-#+begin_src emacs-lisp
-  (use-package sudo-edit
-    :ensure
+  (elpaca evil-collection
     :config
-      (dt/leader-keys
-        "fu" '(sudo-edit-find-file :wk "Sudo find file")
-        "fU" '(sudo-edit :wk "Sudo edit file")))
+      (setq evil-collection-list '(dashboard dired ibuffer))
+      (evil-collection-init))
 #+end_src
 
-* BACKUP
+*** Evil Nerd Commenter
 #+begin_src emacs-lisp
-(setq backup-directory-alist '((".*" . "~/.local/share/Trash/files")))
+  (elpaca evil-nerd-commenter (use-package evil-nerd-commenter
+    :bind ("M-/" . evilnc-comment-or-uncomment-lines)))
 #+end_src
 
-* WHICH-KEY
+** Modeline
 #+begin_src emacs-lisp
-(use-package which-key
-  :ensure
-  :diminish
-  :after general
-  :init
-  (which-key-mode 1)
+    (elpaca doom-modeline
+      :init (doom-modeline-mode 1))
+#+end_src
+
+** Rainbow Delimiters
+#+begin_src emacs-lisp
+  (elpaca rainbow-delimiters
+    (use-package rainbow-delimiters
+    :hook (prog-mode . rainbow-delimiters-mode)))
+#+end_src
+
+** Which-key
+#+begin_src emacs-lisp
+  (elpaca which-key
+    :init (which-key-mode)
+    :diminish which-key-mode
+  	:config (setq which-key-idle-delay 0.3))
+#+end_src
+
+** All The Icons
+#+begin_src emacs-lisp
+  (elpaca all-the-icons)
+#+end_src
+
+** SUDO EDIT
+ #+begin_src emacs-lisp
+    (elpaca sudo-edit (use-package sudo-edit
+      :config
+        (dt/leader-keys
+          "fu" '(sudo-edit-find-file :wk "Sudo find file")
+          "fU" '(sudo-edit :wk "Sudo edit file"))))
+ #+end_src
+
+* Settings
+
+** Main Settings
+
+*** Disable startup message
+#+begin_src emacs-lisp
+  (setq inhibit-startup-message t)
+#+end_src
+
+*** Edit Tweaks
+#+begin_src emacs-lisp
+  (delete-selection-mode 1)
+  (electric-indent-mode -1)
+  (electric-pair-mode 1)
+#+end_src
+
+*** UI Tweaks
+#+begin_src emacs-lisp
+  (tool-bar-mode -1)
+  (menu-bar-mode -1)
+  (scroll-bar-mode -1)
+  (tooltip-mode -1)
+  (set-fringe-mode 10)
+  (setq visible-bell -1)
+#+end_src
+
+*** Enable Line Numbers
+#+begin_src emacs-lisp
+  (global-display-line-numbers-mode t)
+#+end_src
+
+** Font
+#+begin_src emacs-lisp
+  (set-face-attribute 'default nil :font "JetBrainsMono Nerd Font" :height 180)
+#+end_src
+
+** Theme
+#+begin_src emacs-lisp
+  (elpaca catppuccin-theme
+    :init
+      (load-theme 'catppuccin t))  
+#+end_src
+
+* Keybindings
+
+** ESC
+#+begin_src emacs-lisp
+  (global-set-key (kbd "<escape>") 'keyboard-escape-quit)
+#+end_src
+
+** General
+#+begin_src emacs-lisp
+  (elpaca general
+  :demand
   :config
-  (setq which-key-side-window-location 'bottom
-        which-key-sort-order #'which-key-key-order-alpha
-        which-key-sort-uppercase-first nil
-        which-key-add-column-padding 1
-        which-key-max-display-columns nil
-        which-key-min-display-lines 6
-        which-key-side-window-slot -10
-        which-key-side-window-max-height 0.25
-        which-key-idle-delay 0.8
-        which-key-max-description-length 25
-        which-key-allow-imprecise-window-fit nil
-        which-key-separator " → " ))
+    (general-evil-setup t)
+    (general-create-definer dt/leader-keys
+      :states '(normal insert visual emacs)
+      :keymaps 'override
+      :prefix "SPC"
+      :global-prefix "M-SPC")
+
+    (dt/leader-keys
+      "." '(find-file :wk "Find file")
+      "f c" '((lambda () (interactive) (find-file "~/.config/emacs/config.org")) :wk "Edit emacs config")
+      "f r" '(counsel-recentf :wk "Find recent files")
+      
+      "b" '(:ignore t :wk "buffer")
+      "bb" '(switch-to-buffer :wk "Switch buffer")
+      "bi" '(ibuffer :wk "Ibuffer")
+      "bk" '(kill-this-buffer :wk "Kill this buffer")
+      "bn" '(next-buffer :wk "Next buffer")
+      "bp" '(previous-buffer :wk "Previous buffer")
+      "br" '(revert-buffer :wk "Reload buffer")
+      
+      "e" '(:ignore t :wk "Evaluate")
+      "eb" '(eval-buffer :wk "Evaluate elisp in buffer")
+      "ed" '(eval-defun :wk "Evaluate defun containing or after point")
+      "ee" '(eval-expression :wk "Evaluate and elisp expression")
+      "el" '(eval-last-sexp :wk "Evaluate elisp expression before point")
+      "er" '(eval-region :wk "Evaluate elisp in region")
+      
+      "h" '(:ignore t :wk "Help")
+      "hf" '(describe-function :wk "Describe function")
+      "hv" '(describe-variable :wk "Describe variable")
+      "t" '(:ignore t :wk "Toggle")
+      "tl" '(display-line-numbers-mode :wk "Toggle line numbers")
+      "tt" '(visual-line-mode :wk "Toggle truncated lines")))
 #+end_src
 
-* IVY (COUNSEL)
+* Languages
+
+** Lsp Mode
 #+begin_src emacs-lisp
-(use-package counsel
-  :ensure
-  :diminish
-  :after ivy
-  :config (counsel-mode))
-
-(use-package ivy
-  :ensure
-  :diminish
-  :bind
-  (("C-c C-r" . ivy-resume)
-   ("C-x B" . ivy-switch-buffer-other-window))
-  :custom
-  (ivy-use-virtual-buffers t)
-  (ivy-count-format "(%d/%d) ")
-  (enable-recursive-minibuffers t)
-  :config
-  (ivy-mode))
-
-(use-package all-the-icons-ivy-rich
-  :ensure
-  :init (all-the-icons-ivy-rich-mode 1))
-
-(use-package ivy-rich
-  :after ivy
-  :ensure
-  :init (ivy-rich-mode 1)
-  :custom
-  (ivy-virtual-abbreviate 'full)
-  (ivy-rich-switch-buffer-align-virtual-buffer t)
-  (ivy-rich-path-style 'abbrev)
-  :config
-  (ivy-set-display-transformer 'ivy-switch-buffer
-                               'ivy-rich-switch-buffer-transformer))
-#+end_src
-
-* MINIBUFFER ESCAPE
-
-#+begin_src emacs-lisp
-(global-set-key [escape] 'keyboard-escape-quit)
-#+end_src
-
-* RAINBOW DELIMITERS
-
-#+begin_src emacs-lisp
-(use-package rainbow-delimiters
-  :ensure
-  :hook ((emacs-lisp-mode . rainbow-delimiters-mode)
-         (clojure-mode . rainbow-delimiters-mode)))
-#+end_src
-
-* ALL THE ICONS
-
-#+begin_src emacs-lisp
-  (use-package all-the-icons
-    :ensure
-    :defer t  ;; Отложенная загрузка
-    :if (display-graphic-p))
-
-  (use-package all-the-icons-dired
-    :ensure
-    :hook (dired-mode . (lambda () (all-the-icons-dired-mode t))))
-#+end_src
-
-* THEME
-
-#+begin_src emacs-lisp
-  (use-package catppuccin-theme
-    :ensure
+  (elpaca lsp-mode (use-package lsp-mode
+    :commands (lsp lsp-deferred)
+    :init
+      (setq lsp-keymap-prefix "C-c l")
     :config
-    (load-theme 'catppuccin :no-confirm)
-    (setq catppuccin-flavor 'mocha)) ;; Выбор варианта темы
+      (lsp-enable-which-key-integration t)))
 #+end_src
 
-* DASHBOARD
-
+** Company
 #+begin_src emacs-lisp
-;; Загрузка projectile перед dashboard
-(use-package projectile
-  :ensure
-  :diminish
-  :config (projectile-mode 1))
-
-(use-package dashboard
-  :ensure
-  :init
-  (setq initial-buffer-choice 'dashboard-open)
-  (setq dashboard-set-heading-icons t)
-  (setq dashboard-set-file-icons t)
-  (setq dashboard-banner-logo-title "Emacs Is More Than A Text Editor!")
-  (setq dashboard-startup-banner 'logo)
-  (setq dashboard-center-content t)
-  (setq dashboard-items '((recents . 5)
-                          (agenda . 5 )
-                          (bookmarks . 3)
-                          (projects . 3)
-                          (registers . 3)))
-  :custom
-  (dashboard-modify-heading-icons '((recents . "file-text")
-                                    (bookmarks . "book")))
-  :config
-  (dashboard-setup-startup-hook))
+  (elpaca company (use-package company
+    :after lsp-mode
+    :hook (lsp-mode . company-mode)
+    :bind (:map company-active-map
+      ("<tab>" . company-complete-selection))
+      (:map lsp-mode-map
+        ("<tab>" . company-indent-or-complete-common))
+    :custom 
+      (company-minimum-prefix-length 1)
+      (company-idle-delay 0.0)))
 #+end_src
 
-* FLYCHECK
-
+** Zig Mode
 #+begin_src emacs-lisp
-  (use-package flycheck
-  :ensure
-  :defer t
-  :diminish
-  :init (add-hook 'after-init-hook #'global-flycheck-mode))
+  (elpaca zig-mode (use-package zig-mode
+    :mode "\\.zig\\'"
+    :hook (zig-mode . lsp-deferred)))
 #+end_src
 
-* DIMINISH
-
+** Org Bullets
 #+begin_src emacs-lisp
-  (use-package diminish :ensure)
-#+end_src
+  (elpaca org-bullets (use-package org-bullets
+    :after org
+    :hook (org-mode . org-bullets-mode)))
+#+end_src 
 
-* COMPANY
 
-#+begin_src emacs-lisp
-(use-package company
-  :ensure
-  :defer 2
-  :diminish
-  :custom
-  (company-begin-commands '(self-insert-command))
-  (company-idle-delay .1)
-  (company-minimum-prefix-length 2)
-  (company-show-numbers t)
-  (company-tooltip-align-annotations 't)
-  (global-company-mode t))
-
-(use-package company-box
-  :ensure
-  :after company
-  :diminish
-  :hook (company-mode . company-box-mode))
-#+end_src
-
-* MODELINE
-#+begin_src emacs-lisp
-(use-package doom-modeline
-  :ensure t
-  :init (doom-modeline-mode 1)
-  :config
-  (setq doom-modeline-height 35
-        doom-modeline-bar-width 5
-        doom-modeline-persp-name t
-        doom-modeline-persp-icon t))
-#+end_src
-
-* LANGUAGE SUPPORT
-#+begin_src emacs-lisp
-  (use-package nix-mode :ensure t)
-  (use-package zig-mode :ensure t)
-#+end_src

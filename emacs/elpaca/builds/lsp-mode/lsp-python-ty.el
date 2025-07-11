@@ -1,0 +1,1 @@
+/home/inari/.config/emacs/elpaca/repos/lsp-mode/clients/lsp-python-ty.el
