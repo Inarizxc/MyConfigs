@@ -1,0 +1,1 @@
+/home/inari/.config/emacs/straight/repos/seq/seq-24.el
