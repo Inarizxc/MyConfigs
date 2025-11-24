@@ -79,16 +79,24 @@ animations {
 
 }
 window-rule {
-    match app-id="zen-beta$" title="^Картинка в картинке$"
+    match app-id="zen-beta" title="^Картинка в картинке"
     open-floating true
 }
 window-rule {
-    match app-id="zen-beta$"
+    match app-id="zen-beta"
     open-maximized true
 }
 window-rule {
-    match title="Калькулятор$"
+    match title="Калькулятор"
     open-floating true
+}
+window-rule {
+    match title="Minecraft*"
+    open-maximized true
+}
+window-rule {
+    match title="dev.zed.Zed"
+    open-maximized true
 }
 window-rule {
 match app-id=r#"^org\.keepassxc\.KeePassXC$"#
@@ -112,8 +120,11 @@ binds {
     Mod+Alt+F hotkey-overlay-title="Open file manager: nautilus" {
         spawn "nautilus"
     }
-    Super+Alt+L hotkey-overlay-title="Lock the Screen: swaylock" {
+    Super+Alt+L hotkey-overlay-title="Lock the Screen: noctalia" {
         spawn "noctalia-shell ipc call lockScreen lock"
+    }
+    Super+C {
+        spawn "noctalia-shell ipc call launcher clipboard"
     }
     Super+Alt+S allow-when-locked=true hotkey-overlay-title=null {
         spawn-sh "pkill orca || exec orca"
@@ -158,10 +169,10 @@ binds {
         focus-column-left
     }
     Mod+J {
-        focus-window-down
+        focus-workspace-down
     }
     Mod+K {
-        focus-window-up
+        focus-workspace-up
     }
     Mod+L {
         focus-column-right
@@ -257,10 +268,10 @@ binds {
         focus-workspace-up
     }
     Mod+U {
-        focus-workspace-down
+        focus-window-down
     }
     Mod+I {
-        focus-workspace-up
+        focus-window-up
     }
     Mod+Ctrl+Page_Down {
         move-column-to-workspace-down
