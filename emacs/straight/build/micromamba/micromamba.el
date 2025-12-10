@@ -1,1 +1,0 @@
-/home/inari/.config/emacs/straight/repos/micromamba.el/micromamba.el

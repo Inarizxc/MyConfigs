@@ -1,1 +1,0 @@
-/home/inari/.config/emacs/elpaca/repos/emacs/catppuccin-definitions.el

@@ -1,1 +1,0 @@
-/home/inari/.config/emacs/straight/repos/f.el/f-shortdoc.el

@@ -1,1 +1,0 @@
-/home/inari/.config/emacs/straight/repos/use-package/use-package-diminish.el

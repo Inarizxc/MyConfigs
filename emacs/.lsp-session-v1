@@ -1,1 +1,0 @@
-#s(lsp-session ("/home/inari/Documents/Dev/zig/test/src") ("~/Documents/Dev/zig/zell/src/") #s(hash-table test equal) #s(hash-table test equal) #s(hash-table test equal))
