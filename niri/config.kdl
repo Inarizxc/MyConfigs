@@ -1,4 +1,6 @@
 prefer-no-csd
+spawn-at-startup "noctalia-shell"
+spawn-at-startup "zen-beta"
 input {
     keyboard {
         repeat-rate 20
@@ -8,7 +10,7 @@ input {
             variant ",phonetic_YAZHERTY"
             options "grp:win_space_toggle"
         }
-        numlock
+        track-layout "window"
     }
     touchpad {
         tap
@@ -37,7 +39,7 @@ output "eDP-1" {
     position x=0 y=0
 }
 layout {
-    gaps 7
+    gaps 5
     center-focused-column "never"
     preset-column-widths {
         proportion 0.33333
@@ -66,10 +68,9 @@ layout {
 
     }
 }
-
-spawn-at-startup "noctalia-shell"
-spawn-at-startup "zen-beta"
-
+cursor {
+    hide-after-inactive-ms 60000
+}
 hotkey-overlay {
     skip-at-startup
     hide-not-bound
@@ -87,10 +88,6 @@ window-rule {
     open-maximized true
 }
 window-rule {
-    match title="Калькулятор"
-    open-floating true
-}
-window-rule {
     match title="Minecraft*"
     open-maximized true
 }
@@ -99,9 +96,9 @@ window-rule {
     open-maximized true
 }
 window-rule {
-match app-id=r#"^org\.keepassxc\.KeePassXC$"#
-match app-id=r#"^org\.gnome\.World\.Secrets$"#
-block-out-from "screen-capture"
+    match app-id="^org\\.keepassxc\\.KeePassXC$"
+    match app-id="^org\\.gnome\\.World\\.Secrets$"
+    block-out-from "screen-capture"
 }
 window-rule {
     geometry-corner-radius 15
