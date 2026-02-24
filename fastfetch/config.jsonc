@@ -2,51 +2,58 @@
   "$schema": "https://github.com/fastfetch-cli/fastfetch/raw/dev/doc/json_schema.json",
   "logo": {
     "type": "kitty",
-    "source": "/home/inari/Pictures/logo.png",
-    "width": 19,
-    "height": 9
+    "source": "/home/inari/.config/fastfetch/logo.png",
+    "width": 25,
+    "height": 10
   },
   "display": {
-    "separator": " "
+    "separator": " │ ",
+    "color": {
+      "keys": "#cba6f7"
+    }
   },
   "modules": [
     {
       "type": "custom",
-      "format": "╭──────────────────────╮"
+      "format": "╭────╮"
     },
     {
       "type": "title",
-      "key": "   ",
+      "key": "│  ",
       "format": "{user-name}"
     },
     {
       "type": "os",
-      "key": "   ",
+      "key": "│ 󰯵 ",
       "format": "{name}"
     },
     {
       "type": "kernel",
-      "key": "   "
+      "key": "│ 󰰊 "
     },
     {
       "type": "uptime",
-      "key": "  󰥔 "
+      "key": "│ 󰥔 "
     },
     {
       "type": "shell",
-      "key": "  󰰢 "
-    },
-    {
-      "type": "de",
-      "key": "  󰇄 "
+      "key": "│ 󰰢 "
     },
     {
       "type": "terminal",
-      "key": "   "
+      "key": "│ 󰰥 "
+    },
+    {
+      "type": "memory",
+      "key": "│ 󰰐 "
+    },
+    {
+      "type": "cpu",
+      "key": "│ 󰯲 "
     },
     {
       "type": "custom",
-      "format": "╰──────────────────────╯"
+      "format": "╰────╯"
     }
   ]
 }

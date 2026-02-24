@@ -9,19 +9,6 @@
 ;;; Packages
 
 (defun +elixir-common-config (mode)
-  (set-ligatures! mode
-    ;; Functional
-    :def "def"
-    :lambda "fn"
-    ;; :src_block "do"
-    ;; :src_block_end "end"
-    ;; Flow
-    :not "!"
-    :in "in" :not-in "not in"
-    :and "and" :or "or"
-    :for "for"
-    :return "return" :yield "use")
-
   ;; ...and only complete the basics
   (sp-with-modes mode
     (sp-local-pair "do" "end"
@@ -72,7 +59,7 @@
                          '(("language_server.bat")
                            ("language_server.sh")))
                  (executable-find "elixir-ls"))
-        (setq lsp-elixir-server-command "elixir-ls"))))
+        (setq lsp-elixir-server-command '("elixir-ls")))))
   :config
   (+elixir-common-config 'elixir-mode))
 

@@ -73,7 +73,7 @@
 
 
 (use-package! calfw-org
-  :commands (calfw-open-org-calendar
+  :commands (calfw-org-open-calendar
              calfw-org-create-source
              calfw-org-create-file-source
              calfw-open-org-calendar-withkevin))
@@ -90,5 +90,5 @@
 (use-package! org-gcal
   :defer t
   :init
-  (defvar org-gcal-dir (concat doom-cache-dir "org-gcal/"))
+  (defvar org-gcal-dir (file-name-concat doom-profile-cache-dir "org-gcal/"))
   (defvar org-gcal-token-file (concat org-gcal-dir "token.gpg")))

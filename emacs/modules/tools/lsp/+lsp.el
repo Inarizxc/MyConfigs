@@ -15,8 +15,8 @@ Can be a list of backends; accepts any value `company-backends' accepts.")
   :commands lsp-install-server
   :init
   ;; Don't touch ~/.emacs.d, which could be purged without warning
-  (setq lsp-session-file (concat doom-cache-dir "lsp-session")
-        lsp-server-install-dir (concat doom-data-dir "lsp"))
+  (setq lsp-session-file (file-name-concat doom-profile-cache-dir "lsp-session")
+        lsp-server-install-dir (file-name-concat doom-profile-data-dir "lsp/"))
   ;; Don't auto-kill LSP server after last workspace buffer is killed, because I
   ;; will do it for you, after `+lsp-defer-shutdown' seconds.
   (setq lsp-keep-workspace-alive nil)
@@ -50,7 +50,8 @@ Can be a list of backends; accepts any value `company-backends' accepts.")
     ;;   constant, so we can't change it *before* the package is loaded either!
     ;;   Thank god a (non-inlined) function is used to build the URL, so we have
     ;;   something to advise.
-    ;; REVIEW: Remove when zigtools/zls#1879 is resolved.
+    ;; REVIEW: Remove when zigtools/zls#1879 & emacs-lsp/lsp-mode#4445 are
+    ;;   resolved.
     (defadvice! +lsp--use-correct-zls-download-url-a (fn &rest args)
       "See zigtools/zls#1879."
       :around #'lsp-zig--zls-url
@@ -61,11 +62,11 @@ Can be a list of backends; accepts any value `company-backends' accepts.")
   :config
   (set-debug-variable! 'lsp-log-io t 2)
 
-  (setq lsp-intelephense-storage-path (concat doom-data-dir "lsp-intelephense/")
+  (setq lsp-intelephense-storage-path (file-name-concat doom-profile-data-dir "lsp-intelephense/")
         lsp-vetur-global-snippets-dir
         (expand-file-name
          "vetur" (or (bound-and-true-p +snippets-dir)
-                     (concat doom-user-dir "snippets/")))
+                     (file-name-concat doom-user-dir "snippets/")))
         lsp-xml-jar-file (expand-file-name "org.eclipse.lsp4xml-0.3.0-uber.jar" lsp-server-install-dir)
         lsp-groovy-server-file (expand-file-name "groovy-language-server-all.jar" lsp-server-install-dir))
 
